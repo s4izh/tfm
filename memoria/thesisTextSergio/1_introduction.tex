@@ -1,0 +1,223 @@
+\chapter{Introduction}
+\label{ch:introduction}
+
+\iffalse
+1. Introducció
+
+1.1. Context del projecte
+
+1.2. Motivació
+
+1.3. Objectius del projecte
+
+Objectiu general:
+Objectius específics:
+
+1.4. Estructura del document
+
+Resum del contingut de cada capítol
+\fi
+
+\section{Context}
+
+In the last decade, the landscape of computational science has undergone a
+fundamental shift toward data-centric paradigms. The representation of data in
+multidimensional arrays, or tensors, has become the cornerstone of modern
+numerical analysis. While linear algebra, specifically vector and matrix
+operations, has historically dominated the field of High-Performance Computing
+(HPC), the rise of Deep Learning (DL), Quantum Chemistry, and Fluid Dynamics
+has necessitated the move toward higher-order tensor operations.
+
+The Tensor-Vector Contraction (TVC) is a fundamental kernel within this
+hierarchy. It generalizes the matrix-vector multiplication to higher
+dimensions, where an $N$-th order tensor is contracted with a vector along one
+or more modes. As datasets grow in dimensionality and resolution, the
+efficiency of these contractions determines the feasibility of large-scale
+simulations and real-time inference in artificial intelligence. 
+
+Understanding the theoretical limits of hardware is essential in this context. 
+Frameworks such as the Roofline performance model \cite{williams2009roofline} 
+reveal that, unlike compute-heavy operations, TVC is strictly bound by the 
+memory bandwidth of the system. In fact, TVC attains a mere arithmetic 
+intensity between 1 and 2 FLOP/byte \cite{martinez-ferrer-TVM-article-2022}, rendering 
+the challenge no longer about maximizing floating-point operations, but about 
+optimizing data movement.
+
+\section{Motivation}
+
+TODO: este primer párrafo no me acaba de molar
+
+The hardware of choice for data-parallel workloads has shifted almost
+exclusively toward general-purpose graphics processing units (GPUs). Modern GPU
+architectures, such as NVIDIA's Hopper or Ampere, offer unprecedented
+theoretical peak performance in terms of floating-point operations per second
+(FLOPS) and massive memory bandwidth through High Bandwidth Memory (HBM).
+However, bridging the gap between theoretical peak and sustained performance
+remains a significant challenge for memory-bound kernels like TVC.
+
+TODO: citar cuBLAS, CUTLASS?
+
+While standard libraries such as cuBLAS or CUTLASS provide highly optimized
+implementations for compute-bound matrix-matrix multiplications (GEMM), higher-order tensor
+operations often lack the same level of architectural fine-tuning. A common
+approach is tensor unfolding to assemble a single large matrix \cite{kolda2009tensor},
+which incurs massive memory overhead due to redundant data movement. Other alternatives rely on looped
+matrix-vector multiplications (GEMV), which suffer from \textit{mode-awareness}: performance
+and variability are strongly influenced by the contraction mode.
+
+To mitigate these inefficiencies, recent work has explored mode-oblivious procedures,
+such as those based on Morton-ordered memory layouts \cite{pawlowski2019multi}.
+More importantly for the context of this thesis, the foundational work by
+Dr. Pedro Martínez-Ferrer et al. introduced specialized, native algorithms for standard layouts
+on multi-core (TVM \cite{martinez-ferrer-TVM-article-2022, martinez-ferrer-TVM-software-2022})
+and distributed CPU architectures (dTVC \cite{martinez-ferrer-dTVC-article-2025}). 
+This Master's Thesis represents a direct continuation of this research line. 
+It is motivated by the critical need to extend these state-of-the-art, 
+native ``in-place'' algorithms to the domain of GPUs, operating directly on the 
+tensor layout to maximize the utilization of the streaming multiprocessors (SMs) 
+without moving redundant data.
+
+The core premise of this thesis is its focus on the \textit{kernel level}. We aim to
+develop high-performance, mode-oblivious GPU backends using both the Triton domain-specific language
+(DSL) \cite{tillet2019triton} and native CUDA \cite{NVIDIA_CUDA_Guide}.
+These implementations are designed to serve as
+modular, plug-and-play components within the existing distributed dTVC library infrastructure
+\cite{martinez-ferrer-dTVC-software-2025}. By accelerating the local computational unit
+without requiring changes to the high-level MPI orchestration logic, this work provides
+the essential building blocks to enhance strong scalability in heterogeneous high-performance
+computing environments.
+
+\section{Problem Statement: The Memory Wall in Tensor Algebra}
+
+The primary obstacle in optimizing tensor-vector contractions is the widening 
+gap between computational throughput and memory bandwidth, a phenomenon 
+classically known as the \textit{Memory Wall} \cite{wulf1995hitting}.
+
+Unlike matrix-matrix multiplications, which exhibit high arithmetic intensity 
+(allowing for effective data reuse in shared memory or registers), 
+tensor-vector contractions are strictly memory-bound. The arithmetic intensity of 
+a TVC is significantly lower, meaning performance is limited by how fast 
+the GPU can fetch tensor elements from global memory (VRAM) rather than how 
+fast it can compute them. 
+
+The challenge lies in maximizing the effective memory bandwidth (GB/s) by 
+addressing three critical GPU-specific issues:
+
+\begin{enumerate}
+    \item \textbf{Non-contiguous Memory Accesses:} Depending on the mode of 
+        contraction in $N$-th order tensors, memory access patterns can become 
+        non-contiguous. Without mode-oblivious native kernels, this leads to 
+        uncoalesced memory transactions, potentially wasting up to 90\% of 
+        the available HBM bandwidth.
+    \item \textbf{Occupancy vs. Resource Contention:} Maximizing streaming 
+        multiprocessor (SM) occupancy requires careful management of register 
+        pressure and shared memory allocation to hide memory latency without 
+        limiting the number of active warps.
+    \item \textbf{Kernel Dispatch Overhead:} Particularly in iterative algorithms 
+        like the Higher-Order Power Method (HOPM), the latency of launching 
+        multiple suboptimal or unfolding kernels can easily dominate the 
+        overall execution time.
+\end{enumerate}
+
+\section{Goals of the Project}
+
+The central objective of this thesis is to design, implement, and validate
+native GPU kernels for Tensor-Vector Contraction (TVC) that outperform current
+industry-standard libraries while remaining mode-oblivious. To achieve this
+main objective, the work is divided into four specific goals:
+
+\begin{itemize}
+    \item \textbf{Algorithmic Analysis:} To map the native CPU TVC strategies
+        \cite{martinez-ferrer-TVM-article-2022} to the hierarchical memory
+        model of modern GPUs, identifying optimal thread-block configurations
+        and memory access patterns.
+    \item \textbf{Triton Implementation:} To develop a TVC backend using the
+        Triton DSL \cite{tillet2019triton}, leveraging its automatic tiling and
+        memory management optimizations for rapid prototyping and high-level
+        performance.
+    \item \textbf{CUDA Native Kernels:} To implement a low-level CUDA version
+        utilizing warp-level primitives, loop unrolling, and manual memory
+        coalescing. This will establish a rigorous performance baseline for
+        extreme, hardware-aware optimization.
+    \item \textbf{Integration and Benchmarking:} To evaluate both GPU
+        implementations against cuBLAS-based looped kernels and the original
+        CPU dTVC library, ensuring the new modules are ready for seamless
+        integration into the distributed dTVC framework
+        \cite{martinez-ferrer-dTVC-software-2025}.
+\end{itemize}
+
+\section{Stakeholders and Target Audience}
+
+This Master's Thesis is developed under the Type A modality (thesis carried out
+at the UPC), in accordance with the Facultat d'Informàtica de Barcelona (FIB)
+regulations \cite{normativaFIB}.
+Its outcomes are designed to benefit the broader scientific and
+high-performance computing communities. The stakeholders involved can be
+divided into direct collaborators and end-users.
+
+\subsection{Direct Collaborators}
+
+These are the entities directly involved in the execution, supervision, and provision of resources for the project:
+
+\begin{itemize}
+    \item \textbf{Universitat Politècnica de Catalunya (UPC) - DAC:} Provides
+        the academic supervision, the official evaluation framework for the
+        Master's degree, and access to the \textit{Boada} cluster for initial
+        testing and benchmarking.
+    \item \textbf{Barcelona Supercomputing Center (BSC) - STAR Group:} The
+        project is carried out in collaboration with the \textit{System Tools
+        and Advanced Runtimes} group. Under the guidance of Dr. Pedro
+        Martínez-Ferrer, the group provides the baseline CPU library (dTVC)
+        \cite{martinez-ferrer-TVM-software-2022,
+        martinez-ferrer-dTVC-software-2025} and access to the \textit{Fox}
+        cluster for more benchmarking.
+    \item \textbf{The Author:} Responsible for the research, algorithmic
+        design, low-level implementation, and performance evaluation of the GPU
+        kernels.
+\end{itemize}
+
+\subsection{Beneficiaries and End-Users}
+
+Beyond the direct participants, the optimization of tensor-vector contractions
+holds significant value for external stakeholders:
+
+\begin{itemize}
+    \item \textbf{The HPC and Scientific Research Community:} Researchers in
+        fields such as Quantum Chemistry, Fluid Dynamics, and computational
+        physics, where high-order tensor simulations are constrained by memory
+        bandwidth. A highly optimized, open-source GPU kernel directly
+        accelerates their time-to-solution.
+    \item \textbf{The Artificial Intelligence and Deep Learning Sector:}
+        Engineers and researchers dealing with massive, multidimensional
+        datasets where real-time inference and training times are critical
+        bottlenecks.
+    \item \textbf{The Open-Source Software Community:} By providing a
+        ``white-box'', native alternative to proprietary, closed-source
+        libraries like NVIDIA's cuTENSOR, this project democratizes access to
+        state-of-the-art tensor operations for smaller laboratories and
+        independent developers.
+\end{itemize}
+
+\section{Structure of the Document}
+
+The remainder of this thesis is organized as follows:
+
+\begin{itemize}
+    \item \textbf{Chapter \ref{ch:management}: Project Management} describes
+        the organizational framework, work plan, sustainability report, and
+        economic feasibility of this thesis.
+    \item \textbf{Chapter \ref{ch:background}: Background and State of the Art}
+        reviews the mathematical foundations of tensor algebra, the Roofline
+        performance model, and the architectural evolution of modern GPUs.
+    \item \textbf{Chapter \ref{ch:methodology}: Methodology and Implementation}
+        details the design of the custom CUDA and Triton TVC kernels, alongside
+        the hardware-aware optimization strategies employed.
+    \item \textbf{Chapter \ref{ch:results}: Experimental Results} presents a
+        comprehensive performance analysis, comparing this work with existing
+        solutions in terms of throughput, bandwidth utilization, and energy
+        efficiency.
+    \item \textbf{Chapter \ref{ch:conclusions}: Conclusions and Future Work}
+        summarizes the key findings, evaluates the fulfillment of the
+        objectives, and discusses potential avenues for extending these
+        optimizations to distributed multi-GPU systems.
+\end{itemize}

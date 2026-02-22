@@ -1,0 +1,46 @@
+Your abstract text goes here.  Check your departmental regulations, but generally this should be less than 300 words.  See the beginning of Chapter~\ref{ch:background} for more.
+
+
+The tensor-vector contraction (TVC) is the most memory-bound operation of its
+class and a core component of the higher-order power method (HOPM). Our
+research team has recently proposed state-of-the-art versions of these two
+algorithms for both shared-memory and distributed-memory systems running with
+CPUs. This Master's thesis seeks to accelerate such operations on GPUs.
+
+Tensors can be considered as multidimensional arrays that store data in a
+certain manner according to multiple (i.e. multilinear) attributes. Exploiting
+them is therefore of great importance since it allows us to extract patterns
+inherently present in such datasets. A major kernel is the tensor contraction,
+which includes the following operations: (i) tensor-tensor contraction (TTC),
+(ii) tensor-matrix contraction (TMC), and (iii) tensor-vector contraction
+(TVC), being all of them core components in widely used tensor algorithms like
+the HOPM.
+
+
+In this Master's thesis, the student will be tasked to familiarise with the
+dTVC library developed by our research group. Secondly, he or she will carry
+out the porting of the library to GPUs using the domain-specific language (DSL)
+Triton that will largely simplify the entire process. Thirdly, he or she will
+evaluate the Triton implementation against the current state-of-the-art
+approach: looped TVC algorithm (based on parallel matrix-vector
+multiplications) and a naive HOPM implementation. This stage will allow us to
+identify possible bottlenecks and areas requiring further improvements.
+
+Fourthly, the student will develop a CUDA implementation of the dTVC library
+and benchmark it against the Triton version to achieve even higher speedups.
+
+
+This Master's thesis will take place at the Departament d'Arquitectura de
+Computadors (DAC) at UPC in collaboration with the STAR research group at the
+Barcelona Supercomputing Center (BSC). The System Tools and Advanced Runtimes
+(STAR) group focuses on research crossing multiple software layers from OS,
+runtimes, and low-level APIs, to programming models, tools, and applications.
+
+The group runs traditional HPC, AI, and data analytics applications on
+massively parallel HPC and cloud infrastructures.
+
+The student will have the support from researchers within the STAR group, which
+will provide them guidance throughout the duration of the thesis. The dTVC
+library will be benchmarked using the computational resources of the university
+department.
+

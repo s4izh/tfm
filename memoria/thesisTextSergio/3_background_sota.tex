@@ -1,0 +1,126 @@
+\chapter{Background and State of the Art}
+\label{ch:background}
+
+\section{Mathematical Foundations of Tensors}
+
+In the context of high-performance computing, a tensor is defined as a multidimensional array. The \textit{order} of a tensor is the number of its dimensions (also known as ways or modes). Following the notation of Kolda and Bader (TODO citar)%\cite{kolda2009tensor}
+, which is the standard adopted in the baseline dTVC library, we distinguish between different algebraic objects using the following typographic conventions:
+
+\begin{itemize}[noitemsep]
+    \item \textbf{Scalars} are denoted by lowercase letters ($a, b, c \dots$).
+    \item \textbf{Vectors} are denoted by boldface lowercase letters ($\mathbf{x}, \mathbf{y}, \mathbf{z} \dots$).
+    \item \textbf{Matrices} are denoted by boldface uppercase letters ($\mathbf{A}, \mathbf{B}, \mathbf{C} \dots$).
+    \item \textbf{Tensors} of order three or higher are denoted by boldface Euler script letters ($\boldsymbol{\mathcal{A}}, \boldsymbol{\mathcal{B}}, \boldsymbol{\mathcal{X}} \dots$).
+\end{itemize}
+
+A $d$-th order tensor $\boldsymbol{\mathcal{A}} \in \mathbb{R}^{n_0 \times n_1 \times \dots \times n_{d-1}}$ is composed of $N$ elements, where $N = \prod_{i=0}^{d-1} n_i$. In this thesis, we assume a \textit{last-order} (row-major) storage layout, consistent with C/C++ and CUDA programming paradigms, where the last dimension ($n_{d-1}$) is contiguous in memory.
+
+\subsection{Tensor Contractions: TTC, TMC, and TVC}
+Tensor contraction is a multi-linear operation that reduces the order of the input objects by summing over one or more shared indices. Within this family of operations, we identify three primary kernels, categorized by their computational complexity and similarity to the Basic Linear Algebra Subprograms (BLAS) levels:
+
+\begin{enumerate}
+    \item \textbf{Tensor-Tensor Contraction (TTC):} The contraction of two tensors. It is the most computationally intensive and can typically be mapped to BLAS Level 3 (GEMM) operations.
+    \item \textbf{Tensor-Matrix Contraction (TMC):} The contraction of a tensor with a matrix along a specific mode $k$. Like TTC, it often exhibits high data reuse.
+    \item \textbf{Tensor-Vector Contraction (TVC):} This is the core focus of our research. It involves the contraction of a $d$-order tensor $\boldsymbol{\mathcal{A}}$ with a vector $\mathbf{x}$ along a single mode $k$. 
+\end{enumerate}
+
+Mathematically, the $k$-mode contraction of a tensor $\boldsymbol{\mathcal{A}} \in \mathbb{R}^{n_0 \times \dots \times n_k \times \dots \times n_{d-1}}$ with a vector $\mathbf{x} \in \mathbb{R}^{n_k}$ is denoted as:
+\begin{equation}
+    \boldsymbol{\mathcal{Y}} = \boldsymbol{\mathcal{A}} \times_k \mathbf{x}
+\end{equation}
+The resulting tensor $\boldsymbol{\mathcal{Y}}$ has an order of $d-1$, as the $k$-th dimension is collapsed. 
+
+From a performance engineering perspective, TVC is a \textbf{bandwidth-bound} kernel. As highlighted in \cite{martinez-ferrer-TVM-article-2022}, the arithmetic intensity (AI) of a TVC ranges between 1 and 2 FLOP/byte. This makes it analogous to the Matrix-Vector Multiplication (GEMV), where performance is limited by the speed of the memory sub-system rather than the peak floating-point throughput of the GPU.
+
+\subsection{The Arithmetic Intensity Challenge}
+To understand why the TVC is a bottleneck in HPC, we must analyze its \textit{Arithmetic Intensity} (AI), defined as the ratio of total floating-point operations (FLOPs) to the total number of bytes transferred from memory (Bytes).
+
+For a $k$-mode contraction $\boldsymbol{\mathcal{Y}} = \boldsymbol{\mathcal{A}} \times_k \mathbf{x}$, where $\boldsymbol{\mathcal{A}} \in \mathbb{R}^{n_0 \times \dots \times n_{d-1}}$, the total number of operations is:
+\begin{equation}
+    \text{FLOPs} \approx 2 \times N
+\end{equation}
+where $N = \prod n_i$ is the total number of elements in the tensor. Each element of $\boldsymbol{\mathcal{A}}$ is involved in exactly one multiply-accumulate (MAC) operation (2 FLOPs).
+
+The data movement involves reading the tensor $\boldsymbol{\mathcal{A}}$ ($N$ elements), the vector $\mathbf{x}$ ($n_k$ elements), and writing the output tensor $\boldsymbol{\mathcal{Y}}$ ($N/n_k$ elements). For large tensors, the footprint of $\boldsymbol{\mathcal{A}}$ dominates the traffic. Using 8-byte double-precision floats, the bytes moved are approximately $8N$. Therefore, the AI is:
+\begin{equation}
+    AI_{TVC} \approx \frac{2N \text{ FLOPs}}{8N \text{ Bytes}} = 0.25 \text{ FLOP/byte}
+\end{equation}
+In single precision, this value increases to 0.5 FLOP/byte, and in half-precision, it reaches 1.0 FLOP/byte, matching the ``1 to 2'' range cited in the literature for various data types \cite{martinez-ferrer-TVM-article-2022}.
+
+\subsubsection{Comparison with Matrix-Matrix Multiplication (GEMM)}
+The reason TVC is ``memory-bound'' becomes evident when compared to Tensor-Tensor Contractions (TTC) or GEMM. In a GEMM operation between two $n \times n$ matrices:
+\begin{itemize}[noitemsep]
+    \item \textbf{FLOPs:} $O(n^3)$.
+    \item \textbf{Data:} $O(n^2)$.
+    \item \textbf{Arithmetic Intensity:} $O(n)$.
+\end{itemize}
+In GEMM, as the size of the data increases, the number of operations grows faster than the data movement, allowing for data reuse. Elements can be loaded into high-speed registers or Shared Memory and used multiple times. 
+
+In contrast, in a TVC, there is \textbf{zero reuse of the tensor data}. Each element of $\boldsymbol{\mathcal{A}}$ is loaded from Global Memory (VRAM), used for a single operation, and never required again for that contraction. This places the TVC in the ``sloped'' region of the Roofline Model, where performance is strictly limited by the memory bandwidth of the GPU rather than its peak computing power. Consequently, achieving state-of-the-art performance does not depend on computing faster, but on moving data more efficiently.
+
+\subsection{The Higher-Order Power Method (HOPM)}
+The Higher-Order Power Method is an iterative algorithm used to find the best rank-1 approximation of a tensor. It is a generalization of the power method for matrices and serves as the perfect benchmark for TVC implementations because it requires performing contractions across \textit{all} modes of the tensor.
+
+Given a $d$-order tensor $\boldsymbol{\mathcal{A}}$ and a set of starting vectors $\{\mathbf{x}^{(0)}, \dots, \mathbf{x}^{(d-1)}\}$, each iteration of the HOPM involves $d$ external steps. In each step $j$, the algorithm performs $d-1$ tensor-vector contractions:
+\begin{equation}
+    \mathbf{x}^{(j)} = \boldsymbol{\mathcal{A}} \times_0 \mathbf{x}^{(0)} \dots \times_{j-1} \mathbf{x}^{(j-1)} \times_{j+1} \mathbf{x}^{(j+1)} \dots \times_{d-1} \mathbf{x}^{(d-1)}
+\end{equation}
+followed by a normalization step $\mathbf{x}^{(j)} = \mathbf{x}^{(j)} / \|\mathbf{x}^{(j)}\|$.
+
+The challenge of HOPM lies in its data access pattern. Since it cycles through every mode $k \in \{0, \dots, d-1\}$, a mode-aware library will perform well in the contiguous mode but fail significantly in others. Achieving state-of-the-art performance in HOPM requires a mode-oblivious implementation, where the efficiency remains high and constant regardless of the dimension being contracted.
+
+\section{The dTVC Library: A Native CPU Baseline}
+The starting point of this research is the work developed by Martínez-Ferrer et al. \cite{martinez-ferrer-TVM-article-2022}, which introduced a native shared-memory algorithm for TVC. Unlike traditional approaches that rely on external BLAS libraries, often requiring costly tensor transpositions or unfolding the data into matrices, the dTVC library implements a mode-oblivious kernel.
+
+The library's core innovation is the ability to handle different contraction modes ($k$) by treating the tensor as a logical grid of dimensions $u \times n_k \times v$. This allows the algorithm to:
+\begin{itemize}[noitemsep]
+    \item Perform Vector-Matrix Multiplications (VMM) when $k < d-1$.
+    \item Perform Matrix-Vector Multiplications (MVM) when $k = d-1$.
+\end{itemize}
+By utilizing specific CPU optimizations such as OpenMP task-based parallelism and SIMD vectorization (AVX-512), this baseline achieves between 62\% and 76\% of the theoretical peak bandwidth on NUMA systems. However, as data sizes grow, the superior memory bandwidth of GPUs (HBM2/HBM3) becomes necessary to overcome the CPU's throughput limitations.
+
+\section{GPU Acceleration Paradigms}
+The transition of tensor contractions to the GPU requires a deep understanding of the architecture's memory hierarchy. Given the bandwidth-bound nature of TVC, the primary challenge in CUDA development is ensuring that memory requests are coalesced, minimizing the number of transactions between Global Memory (VRAM) and the Streaming Multiprocessors (SMs).
+
+\subsection{NVIDIA CUDA: The Low-Level Standard}
+Compute Unified Device Architecture (CUDA) provides the fine-grained control necessary to optimize TVC. To reach state-of-the-art performance, our implementation must manage:
+\begin{itemize}
+    \item \textbf{Shared Memory:} Used as a user-managed cache to facilitate reductions or to stage vector data, although its utility for the tensor itself is limited by the lack of data reuse.
+    \item \textbf{Asynchronous Copies:} Utilizing \textit{cuda::memcpy\_async} to overlap data movement with computation.
+    \item \textbf{Warp-Level Primitives:} Using \textit{shuffle} instructions (\_\_shfl\_sync) for high-speed data exchange between threads without hitting shared memory.
+\end{itemize}
+
+\subsection{The Triton DSL: Domain-Specific Optimization}
+A modern alternative to raw CUDA is **Triton**, a Python-based DSL for writing highly efficient GPU kernels \cite{tillet2019triton}. Triton is particularly relevant for this thesis as it automates several low-level optimizations, such as memory coalescing and tiling. 
+Unlike standard libraries, Triton allows for ``kernel fusion'', which could potentially integrate the normalization steps of the HOPM algorithm directly into the TVC kernel, further reducing memory traffic.
+
+\section{Related Work in Tensor Software Acceleration}
+Several libraries and frameworks attempt to optimize tensor operations on GPUs, each with different trade-offs:
+\begin{itemize}
+    \item \textbf{cuTENSOR:} NVIDIA's proprietary library for high-performance tensor n-way operations. While extremely fast, it is a closed-source "black box," making it difficult to adapt for specific research-level optimizations in distributed environments.
+    \item \textbf{CUTLASS:} A collection of CUDA C++ template abstractions. It excels at GEMM-based operations (TTC) but lacks specialized, highly-optimized kernels for the unique memory patterns of TVC.
+    \item \textbf{TACO (The Tensor Algebra COmpiler):} A code generation tool that automatically produces kernels for sparse and dense tensor operations. While versatile, TACO's generated code often struggles to match the hand-tuned performance of native kernels for specific, hardware-dependent bottlenecks.
+\end{itemize}
+This research fills the gap between these general-purpose tools and the need for a native, open-source, and mode-oblivious TVC kernel that can saturate the memory bandwidth of modern GPU clusters.
+
+\section{Distributed-Memory Tensor Contractions}
+While the optimization of a single-node kernel is critical, real-world scientific datasets often exceed the memory capacity of a single GPU or compute node. This necessitates distributed-memory parallelization. Recent advancements in this area, specifically the work by Martínez-Ferrer et al. \cite{martinez-ferrer-dTVC-article-2025}, have established a new baseline for distributed TVC and HOPM.
+
+\subsection{The dTVC and dHOPM3 Algorithms}
+The distributed version of the TVC algorithm (dTVC) introduces a 1D-splitting strategy where the tensor is partitioned along one of its dimensions across multiple MPI processes. The primary challenges in this environment are:
+\begin{itemize}
+    \item \textbf{Communication Overhead:} The need to gather or reduce partial results across the network (e.g., using \textit{MPI\_Allgather} or \textit{MPI\_Allreduce}).
+    \item \textbf{Data Redundancy:} To minimize communication, some algorithms duplicate the input vector $\mathbf{x}$ across all processes, which requires careful memory management.
+\end{itemize}
+
+A significant contribution to the state-of-the-art is the \textbf{dHOPM3} algorithm. Unlike the canonical HOPM, which uses two buffers and incurs heavy memory streaming, dHOPM3 utilizes a three-buffer approach to skip redundant contractions. This optimization can save up to half of the total contractions required, achieving performance figures close to the peak system bandwidth (50\%–80\%) on high-end architectures like MareNostrum 4.
+
+\subsection{The Local Kernel as a Computational Engine}
+
+It is important to emphasize that distributed-memory algorithms such as dTVC and dHOPM3 act primarily as \textit{orchestration layers}. These frameworks manage the high-level logic of data partitioning via MPI and ensure the consistency of partial results across nodes. However, the actual computational load is delegated to local, single-node kernels.
+
+The distributed state-of-the-art has shown that while CPU-based distributed systems are robust, the integration of GPU accelerators remains a frontier. Current distributed implementations often rely on batched CUDA kernels or generic libraries that are not fully optimized for the bandwidth-bounded nature of TVC. This is where the present thesis finds its primary motivation.
+
+By focusing on the development of a state-of-the-art, native GPU kernel, we are providing the essential high-performance computational engine that these distributed systems require. Although the intricate details of MPI-level synchronization, load balancing, and inter-node communication are outside the scope of this work, our research is designed to be highly complementary. 
+
+As a result, any distributed framework can leverage our implementation as a ``drop-in'' replacement for current sub-optimal kernels. This synergy ensures that the performance gains achieved at the architectural level (GPU) directly translate into reduced execution times for large-scale, multi-GPU tensor simulations, effectively pushing the boundary of what is computationally feasible in distributed tensor algebra.

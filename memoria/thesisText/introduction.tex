@@ -1,0 +1,156 @@
+\begin{savequote}[8cm]
+\textlatin{Neque porro quisquam est qui dolorem ipsum quia dolor sit amet, consectetur, adipisci velit...}
+
+There is no one who loves pain itself, who seeks after it and wants to have it, simply because it is pain...
+  \qauthor{--- Cicero's \textit{de Finibus Bonorum et Malorum}}
+\end{savequote}
+
+\chapter{\label{ch:introduction}Introduction}
+
+\minitoc
+
+
+
+\section{Motivation}
+
+Equation~\eqref{eq:scalar-variance-Zm-2} is just an example of how to include professional scientific equations in your PhD thesis:
+%
+\newcommand*{\pd}[3][]{\frac{\partial^{#1}#2}{\partial{#3}^{#1}}} % partial derivative
+\begin{equation}
+  \begin{split}
+    \epsilon_{z} = - \langle \rho D \pd{z}{x_k} \pd{z''}{x_k} \rangle = &
+     \langle \rho D \pd{z}{x_k} \rangle \pd{\langle z \rangle_{\rm f}}{x_k}
+     - \langle \rho D \pd{z}{x_k} \pd{z}{x_k} \rangle = \\
+     & \underbrace{ \langle \rho D \pd{z}{x_k} \rangle \pd{\langle z \rangle_{\rm f}}{x_k} }_{\rm{I}}
+    \underbrace{- \langle \rho D \pd{\langle z \rangle_{\rm f}}{x_k} \pd{\langle z \rangle_{\rm f}}{x_k} \rangle}_{\rm{II}} \\
+    & \underbrace{- 2 \langle \rho D \pd{z''}{x_k} \rangle \pd{\langle z \rangle_{\rm f}}{x_k}}_{\rm{III}}
+    \underbrace{- \langle \rho D \pd{z''}{x_k} \pd{z''}{x_k} \rangle}_{\rm{IV}} ,
+  \end{split}
+  \label{eq:scalar-variance-Zm-2}
+\end{equation}
+%
+
+
+Figure~\ref{fig:mean-variables} is just an example of how to include professional figures in your PhD thesis:
+%
+%
+\begin{figure}[tbh]
+%
+  \centering
+%
+  \subfloat[]{
+    \martinezFerrerFigLabel{0.4\textwidth}{./thesisFigures/fa_density_colour}
+    {$x_2$}{[m]}
+    {$\langle \rho \rangle - \rho_1$}{[kg/m$^3$]}
+  }
+%
+  \subfloat[]{
+    \martinezFerrerFigLabel{0.4\textwidth}{./thesisFigures/fa_temperature_bw}
+    {$x_2$}{[m]}
+    {$\langle T \rangle - T_1$}{[K]}
+  }
+%
+  \caption{Averaged profiles of (a)~density and (b)~temperature.}
+%
+  \label{fig:mean-variables}
+%
+\end{figure}
+%
+
+
+Code~\ref{code:pi} is just an example of how to include professional code snippets in your PhD thesis:
+%
+\begin{listing}[htbp]
+\small
+\begin{minted}[frame=single,linenos]{C}
+static long int num_steps = 100000;
+
+void main () {
+  double x, pi, sum = 0.0, step = 1.0/(double) num_steps;
+  for(long int i = 0; i < num_steps; ++i) {
+    x = (i + 0.5)*step;
+    sum += 4.0/(1.0 + x*x);
+  }
+  pi = step*sum;
+}
+\end{minted}
+\caption{Computation of the number pi ($\pi$).}\label{code:pi}
+\end{listing}
+%
+
+
+Algorithm~\ref{alg:CG-NB} is just an example of how to include professional algorithms in your PhD thesis:
+%
+\begin{algorithm}[tbh]
+\caption{Conjugate gradient, nonblocking algorithm (CG-NB).}\label{alg:CG-NB}
+\small
+\DontPrintSemicolon
+\SetKwInOut{myIn}{Input}
+\SetKwInOut{myInOut}{Input/Output}
+\SetKwInOut{buffers}{Buffers}
+\myIn{sparse matrix {\bf A}.}
+\myInOut{vectors {\bf x}, and {\bf b}.}
+\buffers{vectors {\bf p}, ({\bf A} $\cdot$ {\bf p}), and ({\bf A} $\cdot$ {\bf r}).}
+\BlankLine
+\PrintSemicolon
+${\bf r}_0 \leftarrow {\bf b} - {\bf A} \cdot {\bf x}_0$, ${\bf p}_0 \leftarrow {\bf r}_0$, $\alpha_0 := \alpha_{{\rm n},0} / \alpha_{{\rm d},0} \leftarrow {\bf r}_0 \cdot {\bf r}_0 / ( ({\bf A} \cdot {\bf p}_0) \cdot {\bf p}_0 )$\;
+\For{$i \leftarrow 0, 1, \ldots$}{
+  \lIf(\tcp*[f]{Residual check}){$\sqrt{\alpha_{{\rm n},i-1}} < \epsilon$}{break}
+  ${\bf r}_i \leftarrow {\bf r}_{i-1} - \alpha_{i-1} {\bf A} \cdot {\bf p}_{i-1}$\;
+  $\alpha_{{\rm n},i} := {\bf r}_i \cdot {\bf r}_i$\tcp*[r]{Update numerator}
+  ${\bf A} \cdot {\bf p}_i \leftarrow {\bf A} \cdot {\bf r}_i + \frac{\alpha_{{\rm n},i}}{\alpha_{{\rm n},i-1}} {\bf A} \cdot {\bf p}_{i-1}$\;
+  ${\bf p}_i \leftarrow {\bf r}_i + \frac{\alpha_{{\rm n},i}}{\alpha_{{\rm n},i-1}} {\bf p}_{i-1}$\;
+  $\alpha_{{\rm d},i} := ({\bf A} \cdot {\bf p}_i) \cdot {\bf p}_i$\tcp*[r]{Update denominator}
+  ${\bf x}_i \leftarrow {\bf x}_{i-1} - \frac{\alpha^2_{{\rm n},i-1}}{\alpha_{{\rm d},i-1} \cdot \alpha_{{\rm n},i}} ({\bf p}_{i} - {\bf r}_{i})$\;
+}
+${\bf x}_{i+1} \leftarrow {\bf x}_i - \alpha_i {\bf p}_i$\tcp*[r]{Final solution}
+\end{algorithm}
+%
+
+
+Table~\ref{tab:sparsemem} is just an example of how to include professional tables in your PhD thesis:
+%
+\begin{table}[htbp]
+%
+\centering
+%
+  \caption{Memory footprints associated with different sparse matrix formats.}
+%
+  \begin{tabular}{ccccc}
+    \toprule
+    Format & Buffers & Addresses & Values & MB/M$r$ \\
+    \midrule
+    COO & 3 & $2n$ & $n$ & 168  \\
+    LDU & 5 & $n-r$ & $n$ & 104 \\
+    LDU-CSR & 7 & $n+r+2$ & $n$ & 120 \\
+    CSR & 3 & $n+r+1$ & $n$ & 120 \\
+    MSR & 4 & $n+1$ & $n$ & 112 \\
+    \bottomrule
+  \end{tabular}
+%
+  \label{tab:sparsemem}
+%
+\end{table}
+%
+
+The rapid advance of minimally-invasive cardiac procedures promises improvements in patient safety, procedure efficacy, and access to treatment.  While percutaneous coronary intervention (PCI) has become routine and highly effective \cite{bravata_systematic_2007}, catheter procedures in areas such as electrophysiology (EP) and valve replacement are still coming of age.  This progress is driven by demographics and the improvement in general cardiac care, as patients surviving initial cardiac events go on to require treatment for sequelae \cite{foot_demographics_2000}.  The growing need for advanced treatment is being answered by developments in catheter technology and procedures.  These tools are continually advancing to access and manipulate an ever-broader range of anatomy \cite{sousa_new_2005}.
+
+Lorem ipsum dolor sit amet, consectetur adipiscing elit. Maecenas sagittis dolor at nulla feugiat, vitae iaculis est rutrum. Mauris eu sem eros. Sed id faucibus urna. In egestas eros et sapien egestas imperdiet. In hac habitasse platea dictumst. Phasellus vitae varius tortor. Mauris nec sollicitudin enim. Suspendisse molestie leo nec mauris molestie, nec imperdiet magna vehicula. Phasellus sodales tortor dui, a lacinia turpis congue at. Pellentesque mattis dui non libero commodo, at accumsan ex ultrices. Integer eget ex eget dui cursus euismod et accumsan felis. Nullam laoreet sodales dui, ut finibus elit varius a. Sed elementum orci quis libero ullamcorper, eget egestas enim convallis. Sed nibh libero, tincidunt ultricies nibh quis, lobortis placerat mauris. Maecenas at laoreet risus, nec dictum libero. Donec accumsan, orci eu tempus mattis, nisl arcu auctor turpis, ac sollicitudin justo orci nec nulla.
+
+Nam eget sem sed ligula vehicula iaculis. In non arcu a nisl interdum gravida. Nam egestas erat non turpis sagittis vestibulum. Praesent est metus, facilisis eu commodo sed, sagittis et est. Duis scelerisque luctus erat, elementum pulvinar felis bibendum a. Morbi hendrerit rhoncus consectetur. Vestibulum nec odio finibus, blandit turpis eget, dignissim orci. Curabitur eu ligula auctor, porttitor nulla non, maximus turpis. Nunc sed quam at est varius interdum eu vitae odio. Vestibulum egestas dapibus nulla sit amet fermentum.
+
+Vestibulum ut neque urna. Ut nec odio lobortis, ultricies nulla quis, ultricies tellus. Nam ac iaculis sapien. Vivamus vitae risus id tortor interdum pellentesque. Quisque lorem lectus, sagittis vel metus et, sagittis finibus justo. Curabitur pulvinar odio tellus, eu vehicula est dictum eget. Morbi sed justo justo. Vivamus enim nibh, facilisis pretium luctus quis, ullamcorper quis ipsum. Pellentesque a mi a elit euismod malesuada.
+
+Vestibulum interdum est vel orci tincidunt auctor. Nunc tristique nulla nec blandit fermentum. Maecenas id libero ut justo dictum sodales. Nullam justo sapien, dignissim vel enim at, porta pharetra metus. Integer euismod quam eget ligula gravida euismod. Pellentesque commodo, quam sit amet bibendum tempor, nisi odio varius mauris, et accumsan justo ex sed nunc. Cras bibendum nibh ac dolor volutpat, non elementum orci pulvinar. Maecenas et porttitor nulla. Suspendisse sapien massa, dapibus at blandit et, rhoncus suscipit velit. Fusce molestie, velit eget sagittis suscipit, est libero aliquam libero, in iaculis mi tellus ac nunc.
+
+\section{Contribution}
+
+Sed in rhoncus lectus. Mauris vulputate purus non malesuada pulvinar. Curabitur ullamcorper hendrerit elit, id vulputate libero sagittis vel. Pellentesque ac faucibus est. Class aptent taciti sociosqu ad litora torquent per conubia nostra, per inceptos himenaeos. Integer venenatis, nisl eleifend pellentesque consequat, sem tortor malesuada ante, ut tincidunt elit tortor sit amet nunc.
+
+Cras vehicula ipsum sit amet dui rutrum ultrices. Integer eu eleifend odio. Praesent tempor, libero id ullamcorper euismod, lectus diam lobortis mauris, id venenatis arcu sem vitae purus. Pellentesque luctus tristique metus quis mollis. Praesent ullamcorper neque velit, sed iaculis est convallis sit amet. Quisque nec massa ut magna lobortis imperdiet. Quisque rhoncus purus eget mollis aliquet. Donec vehicula viverra nisl, sed posuere turpis vulputate non. Donec malesuada, eros id interdum volutpat, ipsum orci luctus quam, non pulvinar urna ipsum eget purus. Nam hendrerit condimentum tristique.
+
+Proin metus velit, tempor at fringilla non, dictum eu felis. Proin volutpat enim ut fermentum aliquam. Nam dictum nisi eu nisl viverra fermentum. Pellentesque tristique arcu non orci congue faucibus. Fusce sit amet nisl fringilla, feugiat turpis vitae, eleifend ante. Suspendisse elementum, lectus non pulvinar bibendum, lectus massa faucibus turpis, vitae porta risus sem quis metus. Maecenas id sapien et dui lobortis imperdiet nec eu mi. Quisque porttitor tincidunt nisi, eget sagittis orci. Nunc mattis erat malesuada facilisis viverra. Maecenas sodales iaculis nisi vel tincidunt. Morbi aliquet nibh ac facilisis consectetur. In ultrices libero quis massa porttitor cursus. Quisque suscipit ac tortor eget aliquet. Ut eget lacus vel orci viverra maximus at at purus.
+
+Nam massa neque, varius nec suscipit id, cursus ac mi. Cum sociis natoque penatibus et magnis dis parturient montes, nascetur ridiculus mus. In hac habitasse platea dictumst. Vivamus facilisis nunc quis dictum consectetur. Sed congue sed magna non auctor. Vestibulum accumsan sit amet erat non congue. Sed at condimentum mi, sed scelerisque urna. Etiam tristique pulvinar rutrum. Donec semper nulla vitae rutrum semper. Maecenas ultrices nibh at orci sodales tincidunt sit amet vitae arcu. Curabitur interdum tincidunt ipsum, nec tincidunt nunc dapibus in. Nunc sit amet elementum massa, ut ornare lacus. Vivamus convallis fringilla erat, non suscipit sapien convallis eu. Nunc viverra lectus sit amet turpis viverra, eget iaculis purus rhoncus.
+
+Morbi eu lectus arcu. Sed fringilla dui ut magna commodo, a malesuada ante pellentesque. Donec ornare facilisis pellentesque. Nulla vitae fringilla velit. Nunc id tellus nisl. Maecenas pretium elit lectus, nec consectetur nunc vulputate et. Sed facilisis magna nec gravida hendrerit. Sed a cursus nisl, in rhoncus massa. Curabitur ut nibh interdum, tempor risus vel, scelerisque nibh. Mauris quis ipsum sed risus tempor convallis ut a eros.

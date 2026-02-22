@@ -1,0 +1,58 @@
+\chapter{Project Management}
+\label{ch:management}
+
+2. Gestió del Projecte
+
+2.1. Planificació
+
+Fases del projecte i cronograma mitjançant un diagrama de Gantt.
+
+2.2. Anàlisi de sostenibilitat
+
+Impacte ambiental de l’optimització de recursos al núvol i sostenibilitat del programari.
+
+2.3. Estudi econòmic i viabilitat
+
+Anàlisi de costos de desenvolupament, infraestructura i ROI.
+
+2.4. Anàlisi de riscos
+
+Riscos tècnics i organitzatius i plans de mitigació.
+
+\pagebreak
+
+This chapter describes the organizational, economic, and environmental framework of this Master’s Thesis. It details the collaboration between the University and the research center, the planning followed to achieve the objectives, and an analysis of the project's impact and risks.
+
+\section{Planning and Milestones}
+The project has been planned over a period of approximately [X] months, divided into four main phases. 
+
+\begin{enumerate}
+    \item \textbf{Phase 1: Knowledge Acquisition (Months 1-2):} Study of the mathematical foundations of tensors and the existing dTVC CPU implementation. Familiarization with CUDA and Triton DSL.
+    \item \textbf{Phase 2: Design and Implementation (Months 2-4):} Development of the native GPU kernels. This stage involves mapping the TVC logic to GPU threads and registers, and implementing the "mode-oblivious" strategy.
+    \item \textbf{Phase 3: Evaluation and Benchmarking (Months 4-5):} Performance testing on the CTE-POWER cluster. Comparison against state-of-the-art libraries like cuTENSOR.
+    \item \textbf{Phase 4: Document Writing (Months 5-6):} Finalizing the Master's Thesis document and preparing the oral defense.
+\end{enumerate}
+
+\section{Sustainability and Ethical Implications}
+\subsection{Environmental Impact: Energy Efficiency in HPC}
+Energy consumption is a primary concern in High-Performance Computing. The environmental impact of this project is addressed through algorithmic efficiency. By optimizing the Tensor-Vector Contraction kernel to saturate the memory bandwidth, we reduce the total execution time of tensor-based simulations. In the context of the BSC's clusters, a more efficient kernel translates directly into fewer kilowatt-hours (kWh) consumed for the same scientific result, contributing to a more sustainable use of supercomputing resources.
+
+\subsection{Social and Economic Impact}
+This project promotes the use of open-source high-performance software. By developing a native kernel that does not rely on proprietary, closed-source libraries, we contribute to a transparent research ecosystem. This has a positive economic impact by allowing other researchers and small-scale labs to achieve peak GPU performance without the costs or restrictions associated with commercial software licenses.
+
+\section{Economic Analysis and Feasibility}
+The budget for this Master's Thesis is estimated based on the following costs:
+\begin{itemize}
+    \item \textbf{Human Resources:} Estimated at 25€/hour for a junior research engineer (Master's student) and 50€/hour for senior supervision. For a 600-hour project, the cost is approximately 18,000€.
+    \item \textbf{Computational Costs:} The use of high-end GPUs at the BSC. Using standard cloud pricing as a reference (3€/hour per GPU), and estimating 500 hours of computation, this represents 1,500€.
+    \item \textbf{Total Estimated Cost:} Approximately 19,500€.
+\end{itemize}
+The project is feasible thanks to the existing infrastructure at the BSC and the academic support of the DAC department.
+
+\section{Risk Assessment and Mitigation}
+The main risks identified during the project are:
+\begin{itemize}
+    \item \textbf{Learning Curve (Technical Risk):} The complexity of manual memory management in CUDA. \textit{Mitigation:} Frequent meetings with supervisors and using Triton DSL as a higher-level alternative for certain kernels.
+    \item \textbf{Hardware Availability (Infrastructure Risk):} Possible downtime of the BSC clusters. \textit{Mitigation:} Use of local GPU workstations for initial development and testing.
+    \item \textbf{Time Constraints (Management Risk):} The fixed deadline for the Master's Thesis submission. \textit{Mitigation:} Following a strict Gantt chart and prioritizing a working baseline kernel before exploring experimental optimizations.
+\end{itemize}
