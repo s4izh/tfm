@@ -135,10 +135,10 @@ main objective, the work is divided into four specific goals:
         Triton DSL \cite{tillet2019triton}, leveraging its automatic tiling and
         memory management optimizations for rapid prototyping and high-level
         performance.
-    \item \textbf{CUDA Native Kernels:} To implement a low-level CUDA version
-        utilizing warp-level primitives, loop unrolling, and manual memory
-        coalescing. This will establish a rigorous performance baseline for
-        extreme, hardware-aware optimization.
+    \item \textbf{CUDA Native Kernels:} To implement a low-level CUDA
+        \cite{NVIDIA_CUDA_Guide} version utilizing warp-level primitives, loop
+        unrolling, and manual memory coalescing. This will establish a rigorous
+        performance baseline for extreme, hardware-aware optimization.
     \item \textbf{Integration and Benchmarking:} To evaluate both GPU
         implementations against cuBLAS-based looped kernels and the original
         CPU dTVC library, ensuring the new modules are ready for seamless
